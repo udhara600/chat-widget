@@ -730,61 +730,123 @@
     }
 
     async function sendMessage(message) {
-        if (isWaitingForResponse) return;
-        
-        isWaitingForResponse = true;
-        
-        const messageData = {
-            action: "sendMessage",
-            sessionId: currentSessionId,
-            route: config.webhook.route,
-            chatInput: message,
-            metadata: {
-                userId: ""
-            }
-        };
+    if (isWaitingForResponse) return;
+    
+    isWaitingForResponse = true;
+    
+    const messageData = {
+        action: "sendMessage",
+        sessionId: currentSessionId,
+        route: config.webhook.route,
+        chatInput: message,
+        metadata: {
+            userId: ""
+        }
+    };
 
-        const userMessageDiv = document.createElement('div');
-        userMessageDiv.className = 'chat-message user';
-        userMessageDiv.textContent = message;
-        messagesContainer.appendChild(userMessageDiv);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        
-        // Show typing indicator
-        typingIndicator.classList.add('active');
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    const userMessageDiv = document.createElement('div');
+    userMessageDiv.className = 'chat-message user';
+    userMessageDiv.textContent = message;
+    messagesContainer.appendChild(userMessageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    // Show typing indicator
+    typingIndicator.classList.add('active');
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-        try {
-            const response = await fetch(config.webhook.url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(messageData)
-            });
-            
-            const data = await response.json();
-            
-            // Hide typing indicator
-            typingIndicator.classList.remove('active');
-            
-            const botMessageDiv = document.createElement('div');
-            botMessageDiv.className = 'chat-message bot';
-            const responseText = Array.isArray(data) ? data[0].output : data.output;
-            botMessageDiv.innerHTML = formatMessage(responseText);
-            messagesContainer.appendChild(botMessageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        } catch (error) {
-            console.error('Error:', error);
-            
-            // Hide typing indicator and show error message
-            typingIndicator.classList.remove('active');
-            
-            const errorMessageDiv = document.createElement('div');
-            errorMessageDiv.className = 'chat-message bot';
-            errorMessageDiv.innerHTML = formatMessage("I'm sorry, there was an error connecting to the service. Please try again later.");
-            messagesContainer.appendChild(errorMessageDiv);
-        } finally {
-            isWaitingForResponse = false;
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        })();
+    try {
+        const response = await fetch(config.webhook.url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(messageData)
+        });
+        
+        const data = await response.json();
+        
+        // Hide typing indicator
+        typingIndicator.classList.remove('active');
+        
+        const botMessageDiv = document.createElement('div');
+        botMessageDiv.className = 'chat-message bot';
+        const responseText = Array.isArray(data) ? data[0].output : data.output;
+        botMessageDiv.innerHTML = formatMessage(responseText);
+        messagesContainer.appendChild(botMessageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    } catch (error) {
+        console.error('Error:', error);
+        
+        // Hide typing indicator and show error message
+        typingIndicator.classList.remove('active');
+        
+        const errorMessageDiv = document.createElement('div');
+        errorMessageDiv.className = 'chat-message bot';
+        errorMessageDiv.innerHTML = formatMessage("I'm sorry, there was an error connecting to the service. Please try again later.");
+        messagesContainer.appendChild(errorMessageDiv);
+    } finally {
+        isWaitingForResponse = false;
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+}
+
+newChatBtn.addEventListener('click', startNewConversation);
+
+sendButton.addEventListener('click', () => {
+    const message = textarea.value.trim();
+    if (message) {
+        sendMessage(message);
+        textarea.value = '';
+        textarea.style.height = 'auto';
+    }
+});
+
+textarea.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const message = textarea.value.trim();
+        if (message) {
+            sendMessage(message);
+            textarea.value = '';
+            textarea.style.height = 'auto';
+        }
+    }
+});
+
+// Auto-resize textarea as user types
+textarea.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+toggleButton.addEventListener('click', () => {
+    chatContainer.classList.toggle('open');
+    
+    // If opening the chat and no conversation is started, focus the textarea
+    if (chatContainer.classList.contains('open') && chatInterface.classList.contains('active')) {
+        setTimeout(() => textarea.focus(), 300);
+    }
+});
+
+// Add close button handlers
+const closeButtons = chatContainer.querySelectorAll('.close-button');
+closeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        chatContainer.classList.remove('open');
+    });
+});
+
+// Handle window resize events to adjust mobile layout
+window.addEventListener('resize', () => {
+    if (window.innerWidth <= 480) {
+        chatContainer.style.height = window.innerHeight + 'px';
+    } else {
+        chatContainer.style.height = '';
+    }
+});
+
+// Trigger resize event on load
+if (window.innerWidth <= 480) {
+    chatContainer.style.height = window.innerHeight + 'px';
+}
+})();
