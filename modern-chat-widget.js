@@ -787,4 +787,4 @@
         } finally {
             isWaitingForResponse = false;
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
+        })();
